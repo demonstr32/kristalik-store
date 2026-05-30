@@ -1,42 +1,42 @@
 # ========== Бэкенд ==========
 # Виртуальное окружение
-backend/venv/
-backend/env/
-backend/.venv/
-.env
+DRUG-STORE-BACKEND/venv/
+DRUG-STORE-BACKEND/env/
+DRUG-STORE-BACKEND/.venv/
+
 # Кэш Python
-backend/__pycache__/
-backend/*/__pycache__/
+DRUG-STORE-BACKEND/__pycache__/
+DRUG-STORE-BACKEND/*/__pycache__/
 *.py[cod]
 *.pyo
 
-# Миграции (сами файлы нужны, но .pyc не нужны)
-backend/alembic/versions/*.pyc
+# Миграции 
+DRUG-STORE-BACKEND/alembic/versions/*.pyc
 
 # Конфиги с секретами
-backend/.env
-backend/.env.*
+DRUG-STORE-BACKEND/.env
+DRUG-STORE-BACKEND/.env.*
 
 # Логи
 *.log
-backend/logs/
+DRUG-STORE-BACKEND/logs/
 
 # ========== Фронтенд ==========
 # Node.js
-frontend/node_modules/
-frontend/.npm/
-frontend/.yarn/
+drug-store-frontend/node_modules/
+drug-store-frontend/.npm/
+drug-store-frontend/.yarn/
 
 # Сборка
-frontend/dist/
-frontend/build/
-frontend/.next/
-frontend/out/
+drug-store-frontend/dist/
+drug-store-frontend/build/
+drug-store-frontend/.next/
+drug-store-frontend/out/
 
 # Конфиги с секретами
-frontend/.env
-frontend/.env.*
-frontend/.env.local
+drug-store-frontend/.env
+drug-store-frontend/.env.*
+drug-store-frontend/.env.local
 
 # Логи npm/yarn
 npm-debug.log*
@@ -61,7 +61,7 @@ desktop.ini
 *.bak
 *~
 
-# Тесты (если будут)
+# Тесты 
 .pytest_cache/
 .coverage
 htmlcov/
