@@ -9,6 +9,7 @@ from app.db.session import get_db
 from app.models.user import UserORM
 from app.repositories.user import UserRepository
 from app.services.auth import AuthService
+from app.services.prod import ProductService
 
 bearer_scheme = HTTPBearer()
 
@@ -41,3 +42,5 @@ def get_current_user(
 
 def get_auth_service(db: Session = Depends(get_db)):
     return AuthService(db)
+def get_prod_service(db: Session = Depends(get_db)):
+    return ProductService(db)

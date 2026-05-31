@@ -1,4 +1,3 @@
-from unittest import TestResult
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.services.auth import AuthService, UserAlreadyExists, UserNotFound, InvalidPassword
@@ -14,11 +13,6 @@ from app.api.dependencies import get_auth_service, get_current_user
 router = APIRouter(prefix="/auth")
 
 
-@router.get("/me")
-def get_current_user_info(
-    current_user: UserORM = Depends(get_current_user),
-) -> UserResponseSchema:
-    return UserResponseSchema.model_validate(current_user)
 
 @router.post("/register", status_code=status.HTTP_201_CREATED)
 def register_user(payload: UserCreateSchema,
