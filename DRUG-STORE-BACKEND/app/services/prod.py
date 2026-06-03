@@ -22,6 +22,7 @@ class ProductService:
         return ProductResponseSchema.model_validate(prod)
 
     def create_prod(self,prod_create: ProductCreateSchema)->ProductResponseSchema:
+
         new_prod = ProductORM(
             name=prod_create.name,
             price=prod_create.price,
@@ -29,6 +30,7 @@ class ProductService:
             image_url=prod_create.image_url
         )
         self.product_repository.create(new_prod)
+
         self.db.commit()
         self.db.refresh(new_prod)
         return ProductResponseSchema.model_validate(new_prod)
@@ -36,8 +38,9 @@ class ProductService:
     def update_prod(
         self,
         prod_id: int,
-        prod_update: ProductUpdateSchema
+        prod_update: ProductUpdateSchema,
     )->ProductResponseSchema:
+
         prod_for_update = self.product_repository.get_by_id(prod_id)
         if not prod_for_update:
             raise ProductNotFound(f"Продукт с id: {prod_id} не найден")
@@ -49,6 +52,7 @@ class ProductService:
             prod_for_update.description = prod_update.description
         if prod_update.image_url is not None:  
             prod_for_update.image_url = prod_update.image_url
+
         self.db.commit()
         self.db.refresh(prod_for_update)
         return ProductResponseSchema.model_validate(prod_for_update)
@@ -57,5 +61,6 @@ class ProductService:
         prod_for_del = self.product_repository.get_by_id(prod_id)
         if prod_for_del is None:
             raise ProductNotFound(f"Продукт с id: {prod_id} не найден")
+
         self.product_repository.delete(prod_for_del)
         self.db.commit()

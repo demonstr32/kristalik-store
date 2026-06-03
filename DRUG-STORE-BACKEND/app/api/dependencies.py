@@ -39,7 +39,10 @@ def get_current_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
     return user
-
+def get_is_admin(user: UserORM = Depends(get_current_user)):
+    if not user.is_admin:
+        raise HTTPException(status_code = status.HTTP_403_FORBIDDEN,detail="У вас нет прав на выполнение операции")
+    return user.is_admin
 def get_auth_service(db: Session = Depends(get_db)):
     return AuthService(db)
 def get_prod_service(db: Session = Depends(get_db)):
