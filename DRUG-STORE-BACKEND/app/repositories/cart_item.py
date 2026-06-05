@@ -6,7 +6,10 @@ from app.models.cart_item import CartItemORM
 class CartItemRepository:
     def __init__(self,db: Session) -> None:
         self.db = db
-
+    def get_by_cart_id(self,cart_id: UUID)->list[CartItemORM]:
+        return self.db.scalars(select(CartItemORM).where(cart_id=cart_id)).all()
+    def get_by_id(self, item_id: int) -> CartItemORM | None:
+        return self.db.get(CartItemORM, item_id)
     def get_by_cart_and_product(self,cart_id: UUID, product_id: int)->CartItemORM | None:
         return self.db.scalars(select(CartItemORM).where(CartItemORM.cart_id==cart_id, CartItemORM.product_id==product_id)).first()
 
