@@ -13,6 +13,7 @@ class CartRepository:
         if get is not None:
             return get
         else:
-            new_cart = self.create(user_id)
+            new_cart = CartORM(user_id=user_id)
+            self.db.add(new_cart)
             return new_cart
     

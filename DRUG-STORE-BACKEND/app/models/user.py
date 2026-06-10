@@ -8,3 +8,6 @@ class UserORM(Base):
     email: Mapped[str] = mapped_column(unique=True)
     hashed_password: Mapped[str] = mapped_column()
     is_admin: Mapped[bool] = mapped_column(default=False)
+    @property
+    def id(self) -> UUID:
+        return self.user_id
