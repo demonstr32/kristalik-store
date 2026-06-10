@@ -8,7 +8,7 @@ from app.schemas.user import (
     TokenResponseSchema,
 )
 from app.models.user import UserORM
-from app.api.dependencies import get_auth_service, get_current_user  # get_is_admin не нужен здесь
+from app.api.dependencies import get_auth_service, get_current_user  
 
 router = APIRouter(prefix="/auth")
 

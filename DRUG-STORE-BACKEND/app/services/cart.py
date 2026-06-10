@@ -8,7 +8,8 @@ from app.schemas.cart import CartItemSchema, CartItemUpdateSchema, CartItemRespo
 
 class ItemNotFound(Exception):
     """Товара не существует"""
-
+class CartNotFound(Exception):
+    """Корзины или пользоввателя не существует"""
 class NotUserCart(Exception):
     """товар в вашей корзине не найден"""
 class CartService:
@@ -63,7 +64,8 @@ class CartService:
         if not item:
             raise ItemNotFound()
         cart = self.cart_repository.get_by_id(user_id)
-
+        if not cart:
+            raise CartNotFound()
         if cart.user_id!=user_id:
             raise PermissionError("Это не ваш товар")
         self.cart_item_repository.remove_item(item_id)
@@ -73,6 +75,8 @@ class CartService:
         if not item:
             raise ItemNotFound()
         cart = self.cart_repository.get_by_id(item.cart_id)
+        if not cart:
+            raise CartNotFound()
         if cart.user_id==user_id:
             up =self.cart_item_repository.update_quantity(item.id,cart_update.quantity)
             self.db.commit()

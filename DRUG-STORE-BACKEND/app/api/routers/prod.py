@@ -5,7 +5,6 @@ from app.schemas.prod import (
     ProductUpdateSchema,
     ProductResponseSchema
 )
-from app.models.prod import ProductORM
 from app.api.dependencies import get_prod_service, get_is_admin
 
 router = APIRouter(prefix="/products")
