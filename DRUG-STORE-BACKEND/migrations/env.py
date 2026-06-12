@@ -4,6 +4,8 @@ from app.models.user import UserORM
 from app.models.prod import ProductORM
 from app.models.cart import CartORM
 from app.models.cart_item import CartItemORM
+from app.models.order import OrderORM
+from app.models.order_item import OrderItemORM
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
 
