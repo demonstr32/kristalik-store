@@ -11,3 +11,4 @@ class OrderItemORM(Base):
     product_name: Mapped[str] = mapped_column(nullable=False)
     price: Mapped[float] = mapped_column(nullable=False)
     quantity: Mapped[int] = mapped_column(nullable=False)
+    order: Mapped["OrderORM"] = relationship(back_populates="items")

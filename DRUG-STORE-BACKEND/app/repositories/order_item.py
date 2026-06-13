@@ -9,5 +9,3 @@ class OrderItemRepository:
     def create(self,order_item: OrderItemORM)->OrderItemORM:
         self.db.add(order_item)
         return order_item
-    def get_by_order_id(self,order_id: UUID)->list[OrderItemORM]:
-        return list(self.db.scalars(select(OrderItemORM).where(OrderItemORM.order_id==order_id)).all())
