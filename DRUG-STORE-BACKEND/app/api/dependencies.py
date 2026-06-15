@@ -11,6 +11,7 @@ from app.repositories.user import UserRepository
 from app.services.auth import AuthService
 from app.services.prod import ProductService
 from app.services.cart import CartService
+from app.services.order import OrderService
 
 bearer_scheme = HTTPBearer()
 
@@ -50,4 +51,6 @@ def get_prod_service(db: Session = Depends(get_db)):
     return ProductService(db)
 def get_cart_service(db: Session = Depends(get_db)):
     return CartService(db)
+def get_order_service(db: Session = Depends(get_db)):
+    return OrderService(db)
     
