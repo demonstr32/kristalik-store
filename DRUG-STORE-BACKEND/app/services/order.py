@@ -1,6 +1,7 @@
 from uuid import UUID
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.order import OrderORM
+import asyncio
 from app.models.order_item import OrderItemORM
 from app.repositories.order import OrderRepository
 from app.repositories.order_item import OrderItemRepository
@@ -22,24 +23,29 @@ class NotUserOrder(Exception):
 class OrderCannotBeCancelled(Exception):
     """Нельзя отменить заказ в текущем статусе"""
 class OrderService:
-    def __init__(self,db: Session):
+    def __init__(self,db: AsyncSession):
         self.db = db
         self.order_repository = OrderRepository(db)
         self.order_item_repository = OrderItemRepository(db)
         self.cart_repository = CartRepository(db)
         self.cart_item_repository = CartItemRepository(db)
         self.product_repository = ProductRepository(db)
-    def create_order(self, user_id: UUID)->OrderResponseSchema:
-        cart = self.cart_repository.get_or_create(user_id)
-        cart_item = self.cart_item_repository.get_by_cart_id(cart.id)
+    async def create_order(self, user_id: UUID)->OrderResponseSchema:
+        cart = await self.cart_repository.get_or_create(user_id)
+        cart_item = await self.cart_item_repository.get_by_cart_id(cart.id)
         if not cart_item:
             raise NoCartItem()
         order =OrderORM(user_id=user_id, total_price=0)
-        self.order_repository.create(order)
-        self.db.flush()
+        await self.order_repository.create(order)
+        await self.db.flush()
+        tasks = []
+        for i in cart_item:
+            product = self.product_repository.get_by_id(i.product_id)
+            tasks.append(product)
+        result  = await asyncio.gather(*tasks)
         total_price = 0
-        for c in cart_item:
-            product = self.product_repository.get_by_id(c.product_id)
+        for c, product in zip(cart_item,result):
+            
             if not product:
                 raise NoProduct()
             total_price += product.price * c.quantity
@@ -51,42 +57,40 @@ class OrderService:
                 price=product.price,
                 quantity=c.quantity
             )
-            self.order_item_repository.create(order_item)
+            await self.order_item_repository.create(order_item)
         order.total_price = total_price
-        self.db.commit()
-        self.db.refresh(order)
+        await self.db.commit()
+        await self.db.refresh(order)
         return OrderResponseSchema.model_validate(order)
-
-        return OrderResponseSchema.model_validate(order)
-    def get_user_orders(self,user_id: UUID)->list[OrderResponseSchema]:
-        orders = self.order_repository.get_by_user_id(user_id)
+    async def get_user_orders(self,user_id: UUID)->list[OrderResponseSchema]:
+        orders = await self.order_repository.get_by_user_id(user_id)
         return [OrderResponseSchema.model_validate(o) for o in orders]
-    def get_order(self, order_id: UUID, user_id: UUID)->OrderResponseSchema:
-        order = self.order_repository.get_by_id(order_id)
+    async def get_order(self, order_id: UUID, user_id: UUID)->OrderResponseSchema:
+        order = await self.order_repository.get_by_id(order_id)
         if not order:
             raise OrderNotFound()
         if order.user_id!=user_id:
             raise NotUserOrder()
         return OrderResponseSchema.model_validate(order)
-    def update_order_status(self,order_id: UUID, status: str)->OrderResponseSchema:
-        order = self.order_repository.get_by_id(order_id)
+    async def update_order_status(self,order_id: UUID, status: str)->OrderResponseSchema:
+        order = await self.order_repository.get_by_id(order_id)
         if not order:
             raise OrderNotFound()
-        self.order_repository.update_status(order_id=order.id,status=status)
-        self.db.commit()
-        self.db.refresh(order)
+        await self.order_repository.update_status(order_id=order.id,status=status)
+        await self.db.commit()
+        await self.db.refresh(order)
         return OrderResponseSchema.model_validate(order)
-    def cancel_order(self,order_id: UUID, user_id: UUID)->OrderResponseSchema:
-        order = self.order_repository.get_by_id(order_id)
+    async def cancel_order(self,order_id: UUID, user_id: UUID)->OrderResponseSchema:
+        order = await self.order_repository.get_by_id(order_id)
         if not order:
             raise OrderNotFound()
         if order.user_id!=user_id:
             raise NotUserOrder()
         if order.status!="pending":
             raise OrderCannotBeCancelled()
-        self.update_order_status(order_id=order.id,status="cancelled")
+        await self.update_order_status(order_id=order.id,status="cancelled")
 
         return OrderResponseSchema.model_validate(order)
-    def delete_order(self,order_id: UUID)->None:
-        self.order_repository.delete_order(order_id)
-        self.db.commit()
+    async def delete_order(self,order_id: UUID)->None:
+        await self.order_repository.delete_order(order_id)
+        await self.db.commit()

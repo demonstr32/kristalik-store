@@ -1,4 +1,5 @@
-from sqlalchemy.orm import Session
+import asyncio
+from sqlalchemy.ext.asyncio import AsyncSession
 from app.repositories.cart import CartRepository
 from app.repositories.cart_item import CartItemRepository
 from app.repositories.prod import ProductRepository
@@ -11,20 +12,24 @@ class ItemNotFound(Exception):
 class NotUserCart(Exception):
     """товар в вашей корзине не найден"""
 class CartService:
-    def __init__(self, db: Session) -> None:
+    def __init__(self, db: AsyncSession) -> None:
         self.db = db
         self.cart_repository = CartRepository(db)
         self.cart_item_repository = CartItemRepository(db)
         self.product_repository = ProductRepository(db)
-    def get_cart(self, user_id: str)->CartResponseSchema:
-        cart = self.cart_repository.get_or_create(user_id)
-        self.db.commit()
+    async def get_cart(self, user_id: str)->CartResponseSchema:
+        cart = await self.cart_repository.get_or_create(user_id)
         
-        items_orm = self.cart_item_repository.get_by_cart_id(cart.id)
+        items_orm = await self.cart_item_repository.get_by_cart_id(cart.id)
+        tasks = []
+        for i in  items_orm:
+            product = self.product_repository.get_by_id(i.product_id)
+            tasks.append(product)
+        result = await asyncio.gather(*tasks) 
         items_response = []
         total_price = 0
-        for item in items_orm:
-            product = self.product_repository.get_by_id(item.product_id)
+        for item, product in zip(items_orm,result):
+            
             if product:
                 item_response = CartItemResponseSchema(
                         id=item.id,
@@ -36,26 +41,26 @@ class CartService:
                 )
                 items_response.append(item_response)
                 total_price += product.price * item.quantity
+        await self.db.commit()
         return CartResponseSchema(
             id=cart.id,
             user_id=cart.user_id,
             items=items_response,
             total_price=total_price
         )
-    def add_item(self, user_id: str, cart_add: CartItemSchema) -> CartItemResponseSchema:
+    async def add_item(self, user_id: str, cart_add: CartItemSchema) -> CartItemResponseSchema:
         if cart_add.quantity<=0:
             raise ValueError("Количество должно быть больше 0")
-        product = self.product_repository.get_by_id(cart_add.product_id)
+        product = await self.product_repository.get_by_id(cart_add.product_id)
         if not product:
             raise ValueError("Товар не найден")
         
-        cart = self.cart_repository.get_or_create(user_id)
-        existing = self.cart_item_repository.get_by_cart_and_product(cart.id, cart_add.product_id)
+        cart = await self.cart_repository.get_or_create(user_id)
+        existing = await self.cart_item_repository.get_by_cart_and_product(cart.id, cart_add.product_id)
         
         if existing:
-            updated_item = self.cart_item_repository.update_quantity(existing.id, existing.quantity + cart_add.quantity)
-            self.db.commit()
-            self.db.refresh(updated_item)
+            updated_item = await self.cart_item_repository.update_quantity(existing.id, existing.quantity + cart_add.quantity)
+            await self.db.commit()
             return CartItemResponseSchema(
                 id=updated_item.id,
                 product_id=updated_item.product_id,
@@ -65,9 +70,8 @@ class CartService:
                 image_url=product.image_url,
             )
         else:
-            new_item = self.cart_item_repository.add_item(cart.id, cart_add.product_id, cart_add.quantity)
-            self.db.commit()
-            self.db.refresh(new_item)
+            new_item = await self.cart_item_repository.add_item(cart.id, cart_add.product_id, cart_add.quantity)
+            await self.db.commit()
             return CartItemResponseSchema(
                 id=new_item.id,
                 product_id=new_item.product_id,
@@ -77,34 +81,35 @@ class CartService:
                 image_url=product.image_url,
             )
 
-    def remove_item(self, user_id: str, item_id: int) -> None:
-        item = self.cart_item_repository.get_by_id(item_id)
+    async def remove_item(self, user_id: str, item_id: int) -> None:
+        item = await self.cart_item_repository.get_by_id(item_id)
         if not item:
             raise ItemNotFound()
         
-        cart = self.cart_repository.get_by_id(item.cart_id)
+        cart = await self.cart_repository.get_by_id(item.cart_id)
         if not cart or cart.user_id != user_id:
             raise PermissionError("Это не ваш товар")
         
-        self.cart_item_repository.remove_item(item_id)
-        self.db.commit()
+        await self.cart_item_repository.remove_item(item_id)
+        await self.db.commit()
 
-    def update_item(self, user_id: str, item_id: int, cart_update: CartItemUpdateSchema) -> CartItemResponseSchema:
-        item = self.cart_item_repository.get_by_id(item_id)
+    async def update_item(self, user_id: str, item_id: int, cart_update: CartItemUpdateSchema) -> CartItemResponseSchema:
+        item = await self.cart_item_repository.get_by_id(item_id)
         if not item:
             raise ItemNotFound()
         
-        cart = self.cart_repository.get_by_id(item.cart_id)
+        cart = await self.cart_repository.get_by_id(item.cart_id)
 
         
         if cart.user_id != user_id:
             raise NotUserCart()
         
-        updated_item = self.cart_item_repository.update_quantity(item.id, cart_update.quantity)
-        self.db.commit()
-        self.db.refresh(updated_item)
+        updated_item = await self.cart_item_repository.update_quantity(item.id, cart_update.quantity)
+        product = await self.product_repository.get_by_id(updated_item.product_id)
+        await self.db.commit()
+        await self.db.refresh(updated_item)
         
-        product = self.product_repository.get_by_id(updated_item.product_id)
+        
         return CartItemResponseSchema(
             id=updated_item.id,
             product_id=updated_item.product_id,
@@ -113,7 +118,7 @@ class CartService:
             quantity=updated_item.quantity,
             image_url=product.image_url,
         )
-    def clear_cart(self, user_id: str)->None:
-        cart = self.cart_repository.get_or_create(user_id)
-        self.cart_item_repository.clear_cart(cart.id)
-        self.db.commit()
+    async def clear_cart(self, user_id: str)->None:
+        cart = await self.cart_repository.get_or_create(user_id)
+        await self.cart_item_repository.clear_cart(cart.id)
+        await self.db.commit()
