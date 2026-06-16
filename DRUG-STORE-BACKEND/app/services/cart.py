@@ -18,6 +18,8 @@ class CartService:
         self.product_repository = ProductRepository(db)
     def get_cart(self, user_id: str)->CartResponseSchema:
         cart = self.cart_repository.get_or_create(user_id)
+        self.db.commit()
+        
         items_orm = self.cart_item_repository.get_by_cart_id(cart.id)
         items_response = []
         total_price = 0

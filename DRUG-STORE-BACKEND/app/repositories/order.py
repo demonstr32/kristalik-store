@@ -19,3 +19,7 @@ class OrderRepository:
             up.status = status
             return up
         return None
+    def delete_order(self,order_id: UUID):
+        order = self.db.get(OrderORM,order_id)
+        if order:
+            self.db.delete(order)

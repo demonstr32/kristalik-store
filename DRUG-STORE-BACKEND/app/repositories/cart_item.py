@@ -28,6 +28,6 @@ class CartItemRepository:
         if item: 
             self.db.delete(item)
     def clear_cart(self, cart_id: UUID)->None:
-        items = self.db.scalars(select(CartItemORM)).where(CartItemORM.cart_id==cart_id).all()
+        items = self.db.scalars(select(CartItemORM).where(CartItemORM.cart_id==cart_id)).all()
         for item in items:
             self.db.delete(item)

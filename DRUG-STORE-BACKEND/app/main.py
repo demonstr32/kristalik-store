@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.routers.auth import router as auth_router
 from app.api.routers.prod import router as prod_router
 from app.api.routers.cart import router as cart_router
+from app.api.routers.order import router as order_router
 
 app = FastAPI(title="Drug Store API", version="1.0.0")
 
@@ -19,6 +20,7 @@ app.add_middleware(
 app.include_router(auth_router)
 app.include_router(prod_router)
 app.include_router(cart_router)
+app.include_router(order_router)
 @app.get("/")
 def root():
     return {"message": "Drug Store API is running"}

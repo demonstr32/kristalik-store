@@ -13,4 +13,4 @@ class OrderORM(Base):
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
     total_price: Mapped[float] = mapped_column(nullable=False)
     status: Mapped[str] = mapped_column(default="pending",nullable=False)
-    items: Mapped[list["OrderItemORM"]] = relationship(back_populates="order")
+    items: Mapped[list["OrderItemORM"]] = relationship(back_populates="order",cascade="all, delete-orphan")

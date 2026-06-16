@@ -10,6 +10,7 @@ class OrderItemResponseSchema(BaseModel):
     price: float
     quantity: int
 class OrderResponseSchema(BaseModel):
+    model_config = ConfigDict(from_attributes=True)   
     id: UUID
     user_id: UUID
     created_at: datetime

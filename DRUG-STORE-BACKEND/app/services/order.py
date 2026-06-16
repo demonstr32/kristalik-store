@@ -6,9 +6,11 @@ from app.repositories.order import OrderRepository
 from app.repositories.order_item import OrderItemRepository
 from app.repositories.cart import CartRepository
 from app.repositories.cart_item import CartItemRepository
-from app.schemas.order import OrderCreateSchema, OrderItemResponseSchema, OrderResponseSchema, OrderUpdateSchema
+from app.schemas.order import  OrderItemResponseSchema, OrderResponseSchema, OrderUpdateSchema
 from app.schemas.cart import CartResponseSchema
 from app.repositories.prod import ProductRepository
+class NoProduct(Exception):
+    """возможно продукт был удален"""
 class NoCartItem(Exception):
     """корзина пустая"""
 class OrderNotFound(Exception):
@@ -32,31 +34,29 @@ class OrderService:
         cart_item = self.cart_item_repository.get_by_cart_id(cart.id)
         if not cart_item:
             raise NoCartItem()
-        
+        order =OrderORM(user_id=user_id, total_price=0)
+        self.order_repository.create(order)
+        self.db.flush()
         total_price = 0
         for c in cart_item:
             product = self.product_repository.get_by_id(c.product_id)
-            if product:
-                total_price+= product.price*c.quantity
-        order = OrderORM(user_id=user_id,total_price=total_price)
-        self.order_repository.create(order)
-        self.db.commit()
-        self.db.refresh(order)
+            if not product:
+                raise NoProduct()
+            total_price += product.price * c.quantity
 
-
-        for c in cart_item:
-            product = self.product_repository.get_by_id(c.product_id)
             order_item = OrderItemORM(
-                order_id=order.id,
+                order_id = order.id,
                 product_id=product.id,
                 product_name=product.name,
                 price=product.price,
                 quantity=c.quantity
-        
             )
             self.order_item_repository.create(order_item)
-        self.cart_item_repository.clear_cart(cart.id)
+        order.total_price = total_price
         self.db.commit()
+        self.db.refresh(order)
+        return OrderResponseSchema.model_validate(order)
+
         return OrderResponseSchema.model_validate(order)
     def get_user_orders(self,user_id: UUID)->list[OrderResponseSchema]:
         orders = self.order_repository.get_by_user_id(user_id)
@@ -87,3 +87,6 @@ class OrderService:
         self.update_order_status(order_id=order.id,status="cancelled")
 
         return OrderResponseSchema.model_validate(order)
+    def delete_order(self,order_id: UUID)->None:
+        self.order_repository.delete_order(order_id)
+        self.db.commit()
