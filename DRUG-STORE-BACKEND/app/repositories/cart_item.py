@@ -1,5 +1,5 @@
 from uuid import UUID
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.cart_item import CartItemORM
 
@@ -30,7 +30,4 @@ class CartItemRepository:
         if item: 
             self.db.delete(item)
     async def clear_cart(self, cart_id: UUID)->None:
-        res = await self.db.execute(select(CartItemORM).where(CartItemORM.cart_id==cart_id))
-        items = list(res.scalars().all())
-        for item in items:
-            self.db.delete(item)
+        await self.db.execute(delete(CartItemORM).where(CartItemORM.cart_id==cart_id))

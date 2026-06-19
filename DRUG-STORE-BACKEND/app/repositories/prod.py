@@ -17,4 +17,4 @@ class ProductRepository:
         self.db.add(product)
         return product
     async def delete(self,product: ProductORM)->None:
-        self.db.delete(product)
+        await self.db.delete(product)

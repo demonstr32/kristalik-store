@@ -59,9 +59,11 @@ class OrderService:
             )
             await self.order_item_repository.create(order_item)
         order.total_price = total_price
+        await self.cart_item_repository.clear_cart(cart.id)
         await self.db.commit()
-        await self.db.refresh(order)
-        return OrderResponseSchema.model_validate(order)
+        ready_order = await self.order_repository.get_by_id(order.id)
+
+        return OrderResponseSchema.model_validate(ready_order)
     async def get_user_orders(self,user_id: UUID)->list[OrderResponseSchema]:
         orders = await self.order_repository.get_by_user_id(user_id)
         return [OrderResponseSchema.model_validate(o) for o in orders]

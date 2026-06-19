@@ -22,4 +22,4 @@ class UserRepository:
         return new_user
     
     async def delete_user(self, user: UserORM)->None:
-        self.db.delete(user)
+        await self.db.delete(user)
